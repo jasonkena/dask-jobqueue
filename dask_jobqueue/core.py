@@ -189,10 +189,10 @@ class Job(ProcessInterface, abc.ABC):
 
         if job_name is None:
             job_name = dask.config.get("jobqueue.%s.name" % self.config_name)
-        if processes is None:
-            processes = dask.config.get("jobqueue.%s.processes" % self.config_name)
-            if processes is None:
-                processes, _ = nprocesses_nthreads(cores)
+        # if processes is None:
+        #     processes = dask.config.get("jobqueue.%s.processes" % self.config_name)
+        #     if processes is None:
+        #         processes, _ = nprocesses_nthreads(cores)
         if interface is None:
             interface = dask.config.get("jobqueue.%s.interface" % self.config_name)
         if death_timeout is None:
@@ -253,11 +253,11 @@ class Job(ProcessInterface, abc.ABC):
             python=python
         )
         command_args = [dask_worker_command, self.scheduler]
-        command_args += ["--nthreads", self.worker_process_threads]
-        if processes is not None and processes > 1:
-            command_args += ["--nprocs", processes]
+        # command_args += ["--nthreads", self.worker_process_threads]
+        # if processes is not None and processes > 1:
+        #     command_args += ["--nprocs", processes]
 
-        command_args += ["--memory-limit", self.worker_process_memory]
+        # command_args += ["--memory-limit", self.worker_process_memory]
         command_args += ["--name", str(name)]
         command_args += ["--nanny" if nanny else "--no-nanny"]
 
