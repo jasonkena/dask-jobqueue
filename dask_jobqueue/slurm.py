@@ -102,6 +102,8 @@ def slurm_format_bytes_ceil(n):
         return "%dM" % math.ceil(n / (1024**2))
     if n >= 1024:
         return "%dK" % math.ceil(n / 1024)
+    if n == 0:
+        return "0"
     return "1K" % n
 
 
