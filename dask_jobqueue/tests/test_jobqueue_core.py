@@ -43,7 +43,7 @@ def test_command_template(Cluster):
         memory="4GB",
         death_timeout=60,
         local_directory="/scratch",
-        extra=["--preload", "mymodule"],
+        worker_extra_args=["--preload", "mymodule"],
     ) as cluster:
         assert " --death-timeout 60" in cluster._dummy_job._command_template
         assert " --local-directory /scratch" in cluster._dummy_job._command_template
@@ -249,11 +249,11 @@ def test_cluster_without_job_cls():
 
 def test_default_number_of_worker_processes(Cluster):
     with Cluster(cores=4, memory="4GB") as cluster:
-        assert " --nprocs 4" in cluster.job_script()
+        assert " --nworkers 4" in cluster.job_script()
         assert " --nthreads 1" in cluster.job_script()
 
     with Cluster(cores=6, memory="4GB") as cluster:
-        assert " --nprocs 3" in cluster.job_script()
+        assert " --nworkers 3" in cluster.job_script()
         assert " --nthreads 2" in cluster.job_script()
 
 
@@ -393,7 +393,7 @@ def test_security(EnvSpecificCluster, loop):
 
     with EnvSpecificCluster(
         cores=1,
-        memory="100MB",
+        memory="500MiB",
         security=security,
         protocol="tls",
         loop=loop,
@@ -427,7 +427,7 @@ def test_security_temporary(EnvSpecificCluster, loop):
     dirname = os.path.dirname(__file__)
     with EnvSpecificCluster(
         cores=1,
-        memory="100MB",
+        memory="500MiB",
         security=Security.temporary(),
         shared_temp_directory=dirname,
         protocol="tls",
@@ -472,7 +472,7 @@ def test_security_temporary_defaults(EnvSpecificCluster, loop):
     # test automatic behaviour if security is true and shared_temp_directory not set
     with pytest.warns(UserWarning, match="shared_temp_directory"), EnvSpecificCluster(
         cores=1,
-        memory="100MB",
+        memory="500MiB",
         security=True,
         protocol="tls",
         loop=loop,  # for some reason (bug?) using the loop fixture requires using a new test case

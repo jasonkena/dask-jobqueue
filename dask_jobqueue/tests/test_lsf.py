@@ -73,7 +73,7 @@ def test_header():
         assert "#BSUB -P" not in cluster.job_header
 
     with LSFCluster(
-        cores=4, memory="8GB", job_extra=["-u email@domain.com"]
+        cores=4, memory="8GB", job_extra_directives=["-u email@domain.com"]
     ) as cluster:
 
         assert "#BSUB -u email@domain.com" in cluster.job_header
@@ -101,7 +101,9 @@ def test_job_script():
             in job_script
         )
         formatted_bytes = format_bytes(parse_bytes("7GB")).replace(" ", "")
-        assert f"--nthreads 2 --nprocs 4 --memory-limit {formatted_bytes}" in job_script
+        assert (
+            f"--nthreads 2 --nworkers 4 --memory-limit {formatted_bytes}" in job_script
+        )
 
     with LSFCluster(
         queue="general",
@@ -128,14 +130,16 @@ def test_job_script():
             in job_script
         )
         formatted_bytes = format_bytes(parse_bytes("7GB")).replace(" ", "")
-        assert f"--nthreads 2 --nprocs 4 --memory-limit {formatted_bytes}" in job_script
+        assert (
+            f"--nthreads 2 --nworkers 4 --memory-limit {formatted_bytes}" in job_script
+        )
 
     with LSFCluster(
         walltime="1:00",
         cores=1,
         memory="16GB",
         project="Dask On LSF",
-        job_extra=["-R rusage[mem=16GB]"],
+        job_extra_directives=["-R rusage[mem=16GB]"],
     ) as cluster:
 
         job_script = cluster.job_script()
@@ -308,7 +312,8 @@ def test_config_name_lsf_takes_custom_config():
         "mem": 2,
         "memory": "2 GB",
         "walltime": "00:02",
-        "job-extra": [],
+        "job-extra": None,
+        "job-extra-directives": [],
         "lsf-units": "TB",
         "name": "myname",
         "processes": 1,
@@ -316,8 +321,10 @@ def test_config_name_lsf_takes_custom_config():
         "death-timeout": None,
         "local-directory": "/foo",
         "shared-temp-directory": None,
-        "extra": [],
-        "env-extra": [],
+        "extra": None,
+        "worker-extra-args": [],
+        "env-extra": None,
+        "job-script-prologue": [],
         "log-directory": None,
         "shebang": "#!/usr/bin/env bash",
         "use-stdin": None,

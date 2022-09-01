@@ -14,3 +14,8 @@ log
 .cache/
 .pytest_cache
 docs/source/generated
+dask-worker-space/
+ci/slurm/environment.yml
+ci/pbs/environment.yml
+ci/sge/environment.yml
+ci/htcondor/environment.yml

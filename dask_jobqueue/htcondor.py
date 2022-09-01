@@ -37,7 +37,6 @@ Queue
         scheduler=None,
         name=None,
         disk=None,
-        job_extra=None,
         config_name=None,
         submit_command_extra=None,
         cancel_command_extra=None,
@@ -54,29 +53,18 @@ Queue
                 "You must specify how much disk to use per job like ``disk='1 GB'``"
             )
         self.worker_disk = parse_bytes(disk)
-        if job_extra is None:
-            self.job_extra = dask.config.get(
-                "jobqueue.%s.job-extra" % self.config_name, {}
-            )
-        else:
-            self.job_extra = job_extra
 
-        env_extra = base_class_kwargs.get("env_extra", None)
-        if env_extra is None:
-            env_extra = dask.config.get(
-                "jobqueue.%s.env-extra" % self.config_name, default=[]
-            )
-
-        if env_extra is not None:
-            # Overwrite command template: prepend commands from env_extra separated by semicolon.
+        if self._job_script_prologue is not None:
+            # Overwrite command template: prepend commands from job_script_prologue separated by semicolon.
             # This is special for HTCondor, because lines to execute on the worker node cannot be
             # simply added to the submit script like for other batch systems.
-            self._command_template = (
-                "; ".join(env_extra) + "; " + self._command_template
+            self._command_template = "; ".join(
+                self._job_script_prologue + [self._command_template]
             )
 
         self.job_header_dict = {
             "MY.DaskWorkerName": '"htcondor--$F(MY.JobId)--"',
+            "batch_name": self.name,
             "RequestCpus": "MY.DaskWorkerCores",
             "RequestMemory": "floor(MY.DaskWorkerMemory / 1048576)",
             "RequestDisk": "floor(MY.DaskWorkerDisk / 1024)",
@@ -99,8 +87,8 @@ Queue
                     "Stream_Error": True,
                 }
             )
-        if self.job_extra:
-            self.job_header_dict.update(self.job_extra)
+        if self.job_extra_directives:
+            self.job_header_dict.update(self.job_extra_directives)
 
         if submit_command_extra is None:
             submit_command_extra = dask.config.get(
@@ -230,7 +218,10 @@ class HTCondorCluster(JobQueueCluster):
     disk : str
         Total amount of disk per job
     job_extra : dict
-        Extra submit file attributes for the job
+        Deprecated: use ``job_extra_directives`` instead. This parameter will be removed in a future version.
+    job_extra_directives : dict
+        Extra submit file attributes for the job as key-value pairs.
+        They will be inserted as ``key = value``.
     submit_command_extra : list of str
         Extra arguments to pass to condor_submit
     cancel_command_extra : list of str
@@ -251,12 +242,12 @@ class HTCondorCluster(JobQueueCluster):
 
     >>> cluster.adapt(maximum_jobs=20)
 
-    If setup commands need to be run before starting the worker on the worker node, ``env_extra`` can be used,
+    If setup commands need to be run before starting the worker on the worker node, ``job_script_prologue`` can be used,
     e.g., to activate a virtual environment:
 
     >>> from dask_jobqueue.htcondor import HTCondorCluster
     >>> cluster = HTCondorCluster(cores=1, memory="2GB", disk="4GB",
-                                  env_extra=['cd /some/path/', 'source venv/bin/activate'])
+                                  job_script_prologue=['cd /some/path/', 'source venv/bin/activate'])
 
     Note that environment variables are no longer passed via the ``Environment`` parameter in the submit
     description file. If you explictly want to set that, you need to use ``job_extra``.

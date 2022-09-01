@@ -11,16 +11,19 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
     # OAR resource manager options
     shebang: "#!/usr/bin/env bash"
     queue: null
     project: null
     walltime: '00:30:00'
-    env-extra: []
+    env-extra: null
+    job-script-prologue: []
     resource-spec: null
-    job-extra: []
+    job-extra: null
+    job-extra-directives: []
     log-directory: null
     
     # Scheduler options
@@ -38,16 +41,19 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
     # PBS resource manager options
     shebang: "#!/usr/bin/env bash"
     queue: null
     project: null
     walltime: '00:30:00'
-    env-extra: []
+    env-extra: null
+    job-script-prologue: []
     resource-spec: null
-    job-extra: []
+    job-extra: null
+    job-extra-directives: []
     log-directory: null
     
     # Scheduler options
@@ -65,15 +71,18 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
     # SGE resource manager options
     shebang: "#!/usr/bin/env bash"
     queue: null
     project: null
     walltime: '00:30:00'
-    env-extra: []
-    job-extra: []
+    env-extra: null
+    job-script-prologue: []
+    job-extra: null
+    job-extra-directives: []
     log-directory: null
     resource-spec: null
     
@@ -92,17 +101,20 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
     # SLURM resource manager options
     shebang: "#!/usr/bin/env bash"
     queue: null
     project: null
     walltime: '00:30:00'
-    env-extra: []
+    env-extra: null
+    job-script-prologue: []
     job-cpu: null
     job-mem: null
-    job-extra: []
+    job-extra: null
+    job-extra-directives: []
     log-directory: null
     
     # Scheduler options
@@ -120,16 +132,19 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
     # PBS resource manager options
     shebang: "#!/usr/bin/env bash"
     queue: null
     project: null
     walltime: '00:30:00'
-    env-extra: []
+    env-extra: null
+    job-script-prologue: []
     resource-spec: null
-    job-extra: []
+    job-extra: null
+    job-extra-directives: []
     log-directory: null
     
     # Scheduler options
@@ -147,17 +162,20 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
     # LSF resource manager options
     shebang: "#!/usr/bin/env bash"
     queue: null
     project: null
     walltime: '00:30'
-    env-extra: []
+    env-extra: null
+    job-script-prologue: []
     ncpus: null
     mem: null
-    job-extra: []
+    job-extra: null
+    job-extra-directives: []
     log-directory: null
     lsf-units: null
     use-stdin: True             # (bool) How jobs are launched, i.e. 'bsub jobscript.sh' or 'bsub < jobscript.sh'
@@ -177,12 +195,15 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
     # HTCondor Resource Manager options
     disk: null                  # Total amount of disk per job
-    env-extra: []
-    job-extra: {}               # Extra submit attributes
+    env-extra: null
+    job-script-prologue: []
+    job-extra: null             # Extra submit attributes
+    job-extra-directives: {}    # Extra submit attributes
     submit-command-extra: []    # Extra condor_submit arguments
     cancel-command-extra: []    # Extra condor_rm arguments
     log-directory: null
@@ -202,10 +223,13 @@ jobqueue:
     death-timeout: 60           # Number of seconds to wait if a worker can not find a scheduler
     local-directory: null       # Location of fast local storage like /scratch or $TMPDIR
     shared-temp-directory: null       # Shared directory currently used to dump temporary security objects for workers
-    extra: []
+    extra: null                 # deprecated: use worker-extra-args
+    worker-extra-args: []       # Additional arguments to pass to `dask-worker`
 
-    env-extra: []
-    job-extra: []
+    env-extra: null
+    job-script-prologue: []
+    job-extra: null
+    job-extra-directives: []
     log-directory: null
     
     # Scheduler options

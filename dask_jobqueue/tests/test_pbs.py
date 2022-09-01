@@ -50,7 +50,7 @@ def test_header(Cluster):
         assert "#PBS -A" not in cluster.job_header
         assert "#PBS -q" not in cluster.job_header
 
-    with Cluster(cores=4, memory="8GB", job_extra=["-j oe"]) as cluster:
+    with Cluster(cores=4, memory="8GB", job_extra_directives=["-j oe"]) as cluster:
 
         assert "#PBS -j oe" in cluster.job_header
         assert "#PBS -N" in cluster.job_header
@@ -76,7 +76,9 @@ def test_job_script(Cluster):
             in job_script
         )
         formatted_bytes = format_bytes(parse_bytes("7GB")).replace(" ", "")
-        assert f"--nthreads 2 --nprocs 4 --memory-limit {formatted_bytes}" in job_script
+        assert (
+            f"--nthreads 2 --nworkers 4 --memory-limit {formatted_bytes}" in job_script
+        )
 
     with Cluster(
         queue="regular",
@@ -100,7 +102,9 @@ def test_job_script(Cluster):
             in job_script
         )
         formatted_bytes = format_bytes(parse_bytes("7GB")).replace(" ", "")
-        assert f"--nthreads 2 --nprocs 4 --memory-limit {formatted_bytes}" in job_script
+        assert (
+            f"--nthreads 2 --nworkers 4 --memory-limit {formatted_bytes}" in job_script
+        )
 
 
 @pytest.mark.env("pbs")
@@ -109,15 +113,15 @@ def test_basic(loop):
         walltime="00:02:00",
         processes=1,
         cores=2,
-        memory="2GB",
+        memory="2GiB",
         local_directory="/tmp",
-        job_extra=["-V"],
+        job_extra_directives=["-V"],
         loop=loop,
     ) as cluster:
         with Client(cluster) as client:
 
             cluster.scale(2)
-            client.wait_for_workers(2)
+            client.wait_for_workers(2, timeout=QUEUE_WAIT)
 
             future = client.submit(lambda x: x + 1, 10)
             assert future.result(QUEUE_WAIT) == 11
@@ -125,7 +129,7 @@ def test_basic(loop):
 
             workers = list(client.scheduler_info()["workers"].values())
             w = workers[0]
-            assert w["memory_limit"] == 2e9
+            assert w["memory_limit"] == 2 * 1024**3
             assert w["nthreads"] == 2
 
             cluster.scale(0)
@@ -144,15 +148,15 @@ def test_scale_cores_memory(loop):
         walltime="00:02:00",
         processes=1,
         cores=2,
-        memory="2GB",
+        memory="2GiB",
         local_directory="/tmp",
-        job_extra=["-V"],
+        job_extra_directives=["-V"],
         loop=loop,
     ) as cluster:
         with Client(cluster) as client:
 
             cluster.scale(cores=2)
-            client.wait_for_workers(1)
+            client.wait_for_workers(1, timeout=QUEUE_WAIT)
 
             future = client.submit(lambda x: x + 1, 10)
             assert future.result(QUEUE_WAIT) == 11
@@ -160,7 +164,7 @@ def test_scale_cores_memory(loop):
 
             workers = list(client.scheduler_info()["workers"].values())
             w = workers[0]
-            assert w["memory_limit"] == 2e9
+            assert w["memory_limit"] == 2 * 1024**3
             assert w["nthreads"] == 2
 
             cluster.scale(memory="0GB")
@@ -181,7 +185,7 @@ def test_basic_scale_edge_cases(loop):
         cores=2,
         memory="2GB",
         local_directory="/tmp",
-        job_extra=["-V"],
+        job_extra_directives=["-V"],
         loop=loop,
     ) as cluster:
 
@@ -206,7 +210,7 @@ def test_adaptive(loop):
         cores=2,
         memory="2GB",
         local_directory="/tmp",
-        job_extra=["-V"],
+        job_extra_directives=["-V"],
         loop=loop,
     ) as cluster:
         cluster.adapt()
@@ -236,12 +240,12 @@ def test_adaptive_grouped(loop):
         cores=2,
         memory="2GB",
         local_directory="/tmp",
-        job_extra=["-V"],
+        job_extra_directives=["-V"],
         loop=loop,
     ) as cluster:
         cluster.adapt(minimum=1)  # at least 1 worker
         with Client(cluster) as client:
-            client.wait_for_workers(1)
+            client.wait_for_workers(1, timeout=QUEUE_WAIT)
 
             future = client.submit(lambda x: x + 1, 10)
             assert future.result(QUEUE_WAIT) == 11
@@ -261,7 +265,7 @@ def test_adaptive_cores_mem(loop):
         cores=2,
         memory="2GB",
         local_directory="/tmp",
-        job_extra=["-V"],
+        job_extra_directives=["-V"],
         loop=loop,
     ) as cluster:
         cluster.adapt(minimum_cores=0, maximum_memory="4GB")
@@ -289,9 +293,9 @@ def test_scale_grouped(loop):
         walltime="00:02:00",
         processes=2,
         cores=2,
-        memory="2GB",
+        memory="2GiB",
         local_directory="/tmp",
-        job_extra=["-V"],
+        job_extra_directives=["-V"],
         loop=loop,
     ) as cluster:
         with Client(cluster) as client:
@@ -310,7 +314,7 @@ def test_scale_grouped(loop):
 
             workers = list(client.scheduler_info()["workers"].values())
             w = workers[0]
-            assert w["memory_limit"] == 1e9
+            assert w["memory_limit"] == 1024**3
             assert w["nthreads"] == 1
             assert len(workers) == 4
 
@@ -348,15 +352,18 @@ def test_config_name_pbs_takes_custom_config():
         "cores": 1,
         "memory": "2 GB",
         "walltime": "00:02",
-        "job-extra": [],
+        "job-extra": None,
+        "job-extra-directives": [],
         "name": "myname",
         "processes": 1,
         "interface": None,
         "death-timeout": None,
         "local-directory": "/foo",
         "shared-temp-directory": None,
-        "extra": [],
-        "env-extra": [],
+        "extra": None,
+        "worker-extra-args": [],
+        "env-extra": None,
+        "job-script-prologue": [],
         "log-directory": None,
         "shebang": "#!/usr/bin/env bash",
         "job-cpu": None,

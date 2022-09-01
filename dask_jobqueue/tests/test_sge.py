@@ -13,7 +13,7 @@ from . import QUEUE_WAIT
 @pytest.mark.env("sge")
 def test_basic(loop):
     with SGECluster(
-        walltime="00:02:00", cores=8, processes=4, memory="2GB", loop=loop
+        walltime="00:02:00", cores=8, processes=4, memory="2GiB", loop=loop
     ) as cluster:
         with Client(cluster, loop=loop) as client:
 
@@ -30,7 +30,7 @@ def test_basic(loop):
 
             workers = list(client.scheduler_info()["workers"].values())
             w = workers[0]
-            assert w["memory_limit"] == 2e9 / 4
+            assert w["memory_limit"] == 2 * 1024**3 / 4
             assert w["nthreads"] == 2
 
             cluster.scale(0)
@@ -49,15 +49,18 @@ def test_config_name_sge_takes_custom_config():
         "cores": 1,
         "memory": "2 GB",
         "walltime": "00:02",
-        "job-extra": [],
+        "job-extra": None,
+        "job-extra-directives": [],
         "name": "myname",
         "processes": 1,
         "interface": None,
         "death-timeout": None,
         "local-directory": "/foo",
         "shared-temp-directory": None,
-        "extra": [],
-        "env-extra": [],
+        "extra": None,
+        "worker-extra-args": [],
+        "env-extra": None,
+        "job-script-prologue": [],
         "log-directory": None,
         "shebang": "#!/usr/bin/env bash",
         "job-cpu": None,
@@ -79,8 +82,8 @@ def test_job_script(tmpdir):
         queue="my-queue",
         project="my-project",
         walltime="02:00:00",
-        env_extra=["export MY_VAR=my_var"],
-        job_extra=["-w e", "-m e"],
+        job_script_prologue=["export MY_VAR=my_var"],
+        job_extra_directives=["-w e", "-m e"],
         log_directory=log_directory,
         resource_spec="h_vmem=12G,mem_req=12G",
     ) as cluster:
@@ -88,7 +91,7 @@ def test_job_script(tmpdir):
         formatted_bytes = format_bytes(parse_bytes("6GB")).replace(" ", "")
 
         for each in [
-            "--nprocs 2",
+            "--nworkers 2",
             "--nthreads 3",
             f"--memory-limit {formatted_bytes}",
             "-q my-queue",

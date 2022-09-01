@@ -47,8 +47,12 @@ job_parameters = """
     death_timeout : float
         Seconds to wait for a scheduler before closing workers
     extra : list
+        Deprecated: use ``worker_extra_args`` instead. This parameter will be removed in a future version.
+    worker_extra_args : list
         Additional arguments to pass to `dask-worker`
     env_extra : list
+        Deprecated: use ``job_script_prologue`` instead. This parameter will be removed in a future version.
+    job_script_prologue : list
         Other commands to add to script before launching worker.
     header_skip : list
         Lines to skip in the header.
@@ -103,6 +107,11 @@ class Job(ProcessInterface, abc.ABC):
     Parameters
     ----------
     {job_parameters}
+    job_extra : list or dict
+        Deprecated: use ``job_extra_directives`` instead. This parameter will be removed in a future version.
+    job_extra_directives : list or dict
+        Unused in this base class:
+        List or dict of other options for the queueing system. See derived classes for specific descriptions.
 
     Attributes
     ----------
@@ -129,7 +138,7 @@ class Job(ProcessInterface, abc.ABC):
 %(shebang)s
 
 %(job_header)s
-%(env_header)s
+%(job_script_prologue)s
 %(worker_command)s
 """.lstrip()
 
@@ -154,7 +163,11 @@ class Job(ProcessInterface, abc.ABC):
         death_timeout=None,
         local_directory=None,
         extra=None,
+        worker_extra_args=None,
+        job_extra=None,
+        job_extra_directives=None,
         env_extra=None,
+        job_script_prologue=None,
         header_skip=None,
         log_directory=None,
         shebang=None,
@@ -205,8 +218,58 @@ class Job(ProcessInterface, abc.ABC):
             )
         if extra is None:
             extra = dask.config.get("jobqueue.%s.extra" % self.config_name)
+        if worker_extra_args is None:
+            worker_extra_args = dask.config.get(
+                "jobqueue.%s.worker-extra-args" % self.config_name
+            )
+        if extra is not None:
+            warn = (
+                "extra has been renamed to worker_extra_args. "
+                "You are still using it (even if only set to []; please also check config files). "
+                "If you did not set worker_extra_args yet, extra will be respected for now, "
+                "but it will be removed in a future release. "
+                "If you already set worker_extra_args, extra is ignored and you can remove it."
+            )
+            warnings.warn(warn, FutureWarning)
+            if not worker_extra_args:
+                worker_extra_args = extra
+
+        if job_extra is None:
+            job_extra = dask.config.get("jobqueue.%s.job-extra" % self.config_name, [])
+        if job_extra_directives is None:
+            job_extra_directives = dask.config.get(
+                "jobqueue.%s.job-extra-directives" % self.config_name, []
+            )
+        if job_extra is not None:
+            warn = (
+                "job_extra has been renamed to job_extra_directives. "
+                "You are still using it (even if only set to []; please also check config files). "
+                "If you did not set job_extra_directives yet, job_extra will be respected for now, "
+                "but it will be removed in a future release. "
+                "If you already set job_extra_directives, job_extra is ignored and you can remove it."
+            )
+            warnings.warn(warn, FutureWarning)
+            if not job_extra_directives:
+                job_extra_directives = job_extra
+        self.job_extra_directives = job_extra_directives
+
         if env_extra is None:
             env_extra = dask.config.get("jobqueue.%s.env-extra" % self.config_name)
+        if job_script_prologue is None:
+            job_script_prologue = dask.config.get(
+                "jobqueue.%s.job-script-prologue" % self.config_name
+            )
+        if env_extra is not None:
+            warn = (
+                "env_extra has been renamed to job_script_prologue. "
+                "You are still using it (even if only set to []; please also check config files). "
+                "If you did not set job_script_prologue yet, env_extra will be respected for now, "
+                "but it will be removed in a future release. "
+                "If you already set job_script_prologue, env_extra is ignored and you can remove it."
+            )
+            warnings.warn(warn, FutureWarning)
+            if not job_script_prologue:
+                job_script_prologue = env_extra
         if header_skip is None:
             header_skip = dask.config.get(
                 "jobqueue.%s.header-skip" % self.config_name, ()
@@ -222,9 +285,9 @@ class Job(ProcessInterface, abc.ABC):
         self.job_header = None
 
         if interface:
-            extra = extra + ["--interface", interface]
+            worker_extra_args += ["--interface", interface]
         if protocol:
-            extra = extra + ["--protocol", protocol]
+            worker_extra_args += ["--protocol", protocol]
         if security:
             worker_security_dict = security.get_tls_config_for_role("worker")
             security_command_line_list = [
@@ -234,7 +297,7 @@ class Job(ProcessInterface, abc.ABC):
                 if key != "ciphers"
             ]
             security_command_line = sum(security_command_line_list, [])
-            extra = extra + security_command_line
+            worker_extra_args += security_command_line
 
         # Keep information on process, cores, and memory, for use in subclasses
         self.worker_memory = parse_bytes(memory) if memory is not None else None
@@ -245,7 +308,7 @@ class Job(ProcessInterface, abc.ABC):
 
         self.shebang = shebang
 
-        self._env_header = "\n".join(filter(None, env_extra))
+        self._job_script_prologue = job_script_prologue
         self.header_skip = set(header_skip)
 
         # dask-worker command line build
@@ -255,7 +318,7 @@ class Job(ProcessInterface, abc.ABC):
         command_args = [dask_worker_command, self.scheduler]
         # command_args += ["--nthreads", self.worker_process_threads]
         # if processes is not None and processes > 1:
-        #     command_args += ["--nprocs", processes]
+        #     command_args += ["--nworkers", processes]
 
         # command_args += ["--memory-limit", self.worker_process_memory]
         command_args += ["--name", str(name)]
@@ -265,8 +328,8 @@ class Job(ProcessInterface, abc.ABC):
             command_args += ["--death-timeout", death_timeout]
         if local_directory is not None:
             command_args += ["--local-directory", local_directory]
-        if extra is not None:
-            command_args += extra
+        if worker_extra_args is not None:
+            command_args += worker_extra_args
 
         self._command_template = " ".join(map(str, command_args))
 
@@ -299,7 +362,7 @@ class Job(ProcessInterface, abc.ABC):
         pieces = {
             "shebang": self.shebang,
             "job_header": header,
-            "env_header": self._env_header,
+            "job_script_prologue": "\n".join(filter(None, self._job_script_prologue)),
             "worker_command": self._command_template,
         }
         return self._script_template % pieces
